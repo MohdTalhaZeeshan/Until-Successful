@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8b758190-094c-401c-b947-ff86978485ca" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="errorhandlingFlow" doc:id="e1492b81-3113-4f12-a8e7-7b652501cd47" >
+		<http:listener doc:name="Listener" doc:id="1a195c5c-4019-4479-86dd-83ef3df27777" path="/success" config-ref="HTTP_Listener_config">
+			<http:error-response >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="apple" doc:name="Set Variable" doc:id="cd1fcb85-7c80-4df8-8f73-f3067c34e43a" variableName="fruit"/>
+		<flow-ref doc:name="Flow Reference" doc:id="b6658db8-d353-411f-8218-28e31e9e0623" name="errorhandlingFlow1"/>
+		<ee:transform doc:name="Success" doc:id="8ff3a9b1-8958-433b-b193-a158f430259c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Success"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c6400b9b-2304-4a99-a00a-b3066e770d26" message="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f2c92e84-b6d4-44e0-8b16-ea570d20adea" >
+				<ee:transform doc:name="Transform Message" doc:id="42505fa0-882c-48e3-b131-da5e43a4881a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Error Occured in Main Flow"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="84dd0e48-6c16-4354-bf16-a3be0dc67de4" message='#["Logger in Error Handling Part."]' />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="errorhandlingFlow1" doc:id="781b9171-1b43-41c9-86e1-c2967d5c6a95" >
+		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="5153a7f2-c3f5-4e10-bbcd-9bf68478c1af" millisBetweenRetries="6000">
+			<http:request method="GET" doc:name="Request" doc:id="89761536-1da7-4c11-b9a3-01003fe14340" url="xyz.sjkd.com" />
+		</until-successful>
+		<ee:transform doc:name="Transform Message" doc:id="ade2c7a8-108f-42c7-9330-6595df02c592">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Private Flow"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="eef673fb-67e1-439e-9bb0-c29ab6d6f5b9" >
+				<ee:transform doc:name="Transform Message" doc:id="f26818dd-f577-4c4a-a017-60c7c464e6c2" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Transform Message in Private Error Handling"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="0a5edb3e-6db3-48ad-8e8d-dda38d8d9981" message='#["Logger in Private Error Handler"]'/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
